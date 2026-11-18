@@ -17,6 +17,7 @@ jobs:
           cp app/index.html app/manifest.json app/sw.js site/
           for f in icon-180 icon-192 icon-512; do base64 -d app/$f.png.b64 > site/$f.png; done
           touch site/.nojekyll
+          printf 'User-agent: *\nDisallow: /\n' > site/robots.txt
           sha256sum site/*.png
       - name: Push to gh-pages branch
         run: |
