@@ -584,6 +584,14 @@ const hit=(x,t)=>short(t)?(x.w.has(t)||norm(x.n).startsWith(t)):x.h.includes(t);
 D.forEach((x,i)=>x.i=i);const BYNO=Object.fromEntries(D.map(x=>[x.n,x]));
 const LS={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let CART=LS.get('pl_cart',{});for(const k in CART){if(!BYNO[k]||BYNO[k].v==null||!(CART[k]>0))delete CART[k]}
+let RQ=LS.get('pl_rq',{});for(const k in RQ){if(!(RQ[k]&&RQ[k].q>0&&RQ[k].n))delete RQ[k]}
+const rqLines=()=>Object.entries(RQ).map(([k,r])=>({k,...r}));
+function setRq(k,q,info){q=Math.max(0,Math.min(9999,parseInt(q)||0));if(q&&(RQ[k]||info))RQ[k]={...(RQ[k]||info),q};else delete RQ[k];LS.set('pl_rq',RQ);
+ document.querySelectorAll('[data-rqa]').forEach(e=>{if(e.dataset.rqa===k)e.innerHTML=rqAct(k)});bar();if($('orderOv').classList.contains('show'))drawOrder()}
+function rqAct(k){const q=RQ[k]?RQ[k].q:0;if(!q)return `<button class="add" data-radd="${esc(k)}">＋ Add to cart</button>`;
+ return `<span class="line" style="color:#c25400">Price on request</span><div class="step"><button data-rdec="${esc(k)}" aria-label="Less">−</button><input data-rqty="${esc(k)}" type="number" inputmode="numeric" min="0" value="${q}"><button data-rinc="${esc(k)}" aria-label="More">+</button></div>`}
+function rqRows(){const r=rqLines();if(!r.length)return '';return `<tr><td colspan="4" style="background:#fff1e6;font-weight:900;color:#c25400;font-size:12px;letter-spacing:.05em">PRICE REQUEST · price on request, not in totals</td></tr>`+r.map(l=>`<tr><td><span class="no" style="font-weight:800">${esc(l.n)}</span> <small style="color:#0054a6;font-weight:800">${esc(l.b||'')}</small><br>${esc(l.d)}<div class="step" style="display:flex;width:max-content;margin-top:6px"><button data-rdec="${esc(l.k)}" aria-label="Less">−</button><input data-rqty="${esc(l.k)}" type="number" inputmode="numeric" value="${l.q}"><button data-rinc="${esc(l.k)}" aria-label="More">+</button></div></td><td class="r" colspan="2"><i style="color:#c25400;font-weight:800">Price on request</i></td><td><button class="rm" data-rrm="${esc(l.k)}" aria-label="Remove">✕</button></td></tr>`).join('')}
+function rqMsg(r){if(!r.length)return '';let m=`\n*PRICE REQUEST* (price on request - not in totals)\n`;r.forEach((l,i)=>{m+=`${i+1}) ${l.n}${l.b?' ('+l.b+')':''} - ${l.d}\n    Qty: ${l.q} | Price on request\n`});return m}
 const cents=v=>Math.round(v*100);const fmt=c=>'AED '+(c/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const vatC=a=>Math.floor((a*5+50)/100);
 function calc(x,q){const ue=cents(x.e),a=ue*q,v=vatC(a);return {ue,a,v,t:a+v}}
@@ -594,7 +602,7 @@ function act(x){if(x.v==null)return `<button class="askbtn" data-ask="${esc(x.n)
  return `<span class="line">${fmt(calc(x,q).t)}</span><div class="step"><button data-dec="${esc(x.n)}" aria-label="Less">−</button><input data-qty="${esc(x.n)}" type="number" inputmode="numeric" min="0" value="${q}"><button data-inc="${esc(x.n)}" aria-label="More">+</button></div>`}
 function setQty(n,q){q=Math.max(0,Math.min(9999,parseInt(q)||0));if(q)CART[n]=q;else delete CART[n];LS.set('pl_cart',CART);
  const x=BYNO[n];const el=document.getElementById('a_'+x.i);if(el)el.innerHTML=act(x);document.querySelectorAll(`[data-pfa="${x.i}"]`).forEach(e=>e.innerHTML=act(x));bar();if($('orderOv').classList.contains('show'))drawOrder()}
-function bar(){const t=totals();$('cartbar').classList.toggle('show',t.n>0);$('cbn').textContent=`${t.n} product${t.n===1?'':'s'} · ${t.q} qty`;$('cbt').textContent=fmt(t.t)}
+function bar(){const t=totals(),r=rqLines().length;$('cartbar').classList.toggle('show',t.n>0||r>0);$('cbn').textContent=`${t.n} product${t.n===1?'':'s'} · ${t.q} qty`+(r?` · ${r} price request`:'');$('cbt').textContent=t.n?fmt(t.t):'Price on request'}
 const FIELDS=['o_name','o_code','o_phone','o_area','o_emirate','o_se','o_sephone','o_cdate','o_date','o_notes'];
 const DET=[['name','o_name','Customer Name'],['code','o_code','Customer Code'],['phone','o_phone','Contact Number'],['area','o_area','Shop Area'],['emirate','o_emirate','Emirate'],['se','o_se','Sales Executive Name'],['sephone','o_sephone','Contact Number'],['cdate','o_cdate','Order Confirmation Date',1],['date','o_date','Delivery Date',1]];
 const todayISO=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
@@ -602,7 +610,7 @@ function prefill(){if(SM){if(!$('o_se').value)$('o_se').value=SM.name;if(!$('o_s
 function saveDraft(){LS.set('pl_draft',Object.fromEntries(FIELDS.map(k=>[k,$(k).value])))}
 function detLines(c){return DET.filter(d=>c[d[0]]).map(d=>`${d[2]}: ${d[3]?niceDate(c[d[0]]):c[d[0]]}`).join('\n')+'\n'}
 function formC(){const g=f=>$(f).value.trim();const c={};DET.forEach(d=>c[d[0]]=g(d[1]));c.notes=g('o_notes');return c}
-function drawOrder(){const ls=lines();$('o_lines').innerHTML=ls.map(l=>`<tr><td><span class="no" style="font-weight:800">${esc(l.x.n)}</span><br>${esc(l.x.d)}<br><small style="color:#8a929b">${esc(l.x.p)}</small><div class="step" style="display:flex;width:max-content;margin-top:6px"><button data-dec="${esc(l.x.n)}" aria-label="Less">−</button><input data-qty="${esc(l.x.n)}" type="number" inputmode="numeric" value="${l.q}"><button data-inc="${esc(l.x.n)}" aria-label="More">+</button></div></td><td class="r">${money(l.ue)}</td><td class="r"><b>${money(l.a)}</b></td><td><button class="rm" data-rm="${esc(l.x.n)}" aria-label="Remove">✕</button></td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#8a929b;padding:18px">No items yet. Tap ＋ Add on a product.</td></tr>';
+function drawOrder(){const ls=lines();$('o_lines').innerHTML=(ls.map(l=>`<tr><td><span class="no" style="font-weight:800">${esc(l.x.n)}</span><br>${esc(l.x.d)}<br><small style="color:#8a929b">${esc(l.x.p)}</small><div class="step" style="display:flex;width:max-content;margin-top:6px"><button data-dec="${esc(l.x.n)}" aria-label="Less">−</button><input data-qty="${esc(l.x.n)}" type="number" inputmode="numeric" value="${l.q}"><button data-inc="${esc(l.x.n)}" aria-label="More">+</button></div></td><td class="r">${money(l.ue)}</td><td class="r"><b>${money(l.a)}</b></td><td><button class="rm" data-rm="${esc(l.x.n)}" aria-label="Remove">✕</button></td></tr>`).join('')+rqRows())||'<tr><td colspan="4" style="text-align:center;color:#8a929b;padding:18px">No items yet. Tap ＋ Add on a product.</td></tr>';
  const TT=totals();$('o_amt').textContent=fmt(TT.a);$('o_vat').textContent=fmt(TT.v);$('o_total').textContent=fmt(TT.t)}
 function normNum(v){let d=String(v||'').replace(/\D/g,'');d=d.replace(/^0+/,'');if(!d)return '';if(!d.startsWith('971')&&d.length<=9)d='971'+d;d=d.replace(/^9710+/,'971');return d}
 const validNum=d=>/^\d{10,15}$/.test(d)&&!(d.startsWith('971')&&d.length!==12);
@@ -613,19 +621,21 @@ function showWho(){$('who').textContent=SM?`👤 ${SM.name} · +${SM.num}`:''}
 function initials(n){const p=String(n||'').trim().split(/\s+/).filter(Boolean);let i=p.length>1?p[0][0]+p[p.length-1][0]:(p[0]||'XX').slice(0,2);return i.toUpperCase().replace(/[^A-Z0-9]/g,'X')}
 function ymd(d=new Date()){return String(d.getFullYear()).slice(2)+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')}
 function nextNo(peek){const k=ymd(),seq=LS.get('pl_seq',{});const n=(seq[k]||0)+1;if(!peek){LS.set('pl_seq',{[k]:n})}return `ORD-${initials(SM&&SM.name)}-${k}-${n}`}
-function orderMsg(no,when){const c=formC();const ls=lines();
- let m=`*NEW ORDER ${no}*\nCreated: ${when}\n\n*Order details*\n`+detLines(c);
- m+=`\n*Items* (unit price excl. VAT)\n`;ls.forEach((l,i)=>{m+=`${i+1}) ${l.x.n} - ${l.x.d}\n    Pack: ${l.x.p} | ${l.q} x ${fmt(l.ue)} = ${fmt(l.a)}\n`});
- const TT=totals();m+=`\nTotal Amount (excl. VAT): ${fmt(TT.a)}\nVAT 5%: ${fmt(TT.v)}\n*Grand Total (incl. VAT): ${fmt(TT.t)}*\n`;if(c.notes)m+=`\nNotes: ${c.notes}\n`;return m}
-function custMsg(no,when){const c=formC();const ls=lines();
- let m=`Dear ${c.name},\n\nThank you for your order. Here is your order confirmation:\n\n*Order no.: ${no}*\n`+detLines(c)+`\n*Items* (unit price excl. VAT)\n`;
- ls.forEach((l,i)=>{m+=`${i+1}) ${l.x.d} (${l.x.n})\n    ${l.x.p} | ${l.q} x ${fmt(l.ue)} = ${fmt(l.a)}\n`});
- const TT=totals();m+=`\nTotal Amount (excl. VAT): ${fmt(TT.a)}\nVAT 5%: ${fmt(TT.v)}\n*Grand Total (incl. VAT): ${fmt(TT.t)}*\n`;if(c.notes)m+=`\nNotes: ${c.notes}\n`;
+function orderMsg(no,when){const c=formC();const ls=lines();const rq=rqLines();const only=!ls.length&&rq.length;
+ let m=`*${only?'PRICE REQUEST':'NEW ORDER'} ${no}*\nCreated: ${when}\n\n*${only?'Request':'Order'} details*\n`+detLines(c);
+ if(ls.length){m+=`\n*Items* (unit price excl. VAT)\n`;ls.forEach((l,i)=>{m+=`${i+1}) ${l.x.n} - ${l.x.d}\n    Pack: ${l.x.p} | ${l.q} x ${fmt(l.ue)} = ${fmt(l.a)}\n`});
+  const TT=totals();m+=`\nTotal Amount (excl. VAT): ${fmt(TT.a)}\nVAT 5%: ${fmt(TT.v)}\n*Grand Total (incl. VAT): ${fmt(TT.t)}*\n`}
+ m+=rqMsg(rq);if(only)m+=`\nPlease confirm price and stock for the items above.\n`;if(c.notes)m+=`\nNotes: ${c.notes}\n`;return m}
+function custMsg(no,when){const c=formC();const ls=lines();const rq=rqLines();const only=!ls.length&&rq.length;
+ let m=`Dear ${c.name},\n\n`+(only?`Thank you for your enquiry. Here is your price request; we will confirm prices shortly:\n\n*Request no.: ${no}*\n`:`Thank you for your order. Here is your order confirmation:\n\n*Order no.: ${no}*\n`)+detLines(c);
+ if(ls.length){m+=`\n*Items* (unit price excl. VAT)\n`;ls.forEach((l,i)=>{m+=`${i+1}) ${l.x.d} (${l.x.n})\n    ${l.x.p} | ${l.q} x ${fmt(l.ue)} = ${fmt(l.a)}\n`});
+  const TT=totals();m+=`\nTotal Amount (excl. VAT): ${fmt(TT.a)}\nVAT 5%: ${fmt(TT.v)}\n*Grand Total (incl. VAT): ${fmt(TT.t)}*\n`}
+ m+=rqMsg(rq);if(c.notes)m+=`\nNotes: ${c.notes}\n`;
  m+=`\nThank you for your business!`;return m}
 function askMsg(){const g=id=>$(id).value.trim();let m=`*PRICE / STOCK QUERY*\n`+smLine()+`\n`;if(g('q_cust'))m+=`Customer / shop: ${g('q_cust')}\n`;if(g('q_prod'))m+=`Product: ${g('q_prod')}\n`;m+=`\nQuestion: ${g('q_text')}\n`;return m}
 function orderData(no,when){const t=totals();
  return {no,when,sm:SM?{name:SM.name,num:SM.num}:null,c:formC(),
-  ls:lines().map(l=>({n:l.x.n,d:l.x.d,p:l.x.p,q:l.q,u:l.u,ue:l.ue,a:l.a,v:l.v,t:l.t})),a:t.a,v:t.v,t:t.t,qty:t.q}}
+  ls:lines().map(l=>({n:l.x.n,d:l.x.d,p:l.x.p,q:l.q,u:l.u,ue:l.ue,a:l.a,v:l.v,t:l.t})),rq:rqLines().map(({k,...r})=>r),a:t.a,v:t.v,t:t.t,qty:t.q}}
 const W1252='€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ';
 const CYR={'А':'A','В':'B','Е':'E','К':'K','М':'M','Н':'H','О':'O','Р':'P','С':'C','Т':'T','Х':'X','а':'a','е':'e','о':'o','р':'p','с':'c','у':'y','х':'x'};
 const pdfSafe=s=>String(s==null?'':s).replace(/[\u0400-\u04ff]/g,ch=>CYR[ch]||ch).replace(/[\u2010-\u2012]/g,'-').replace(/\u00a0/g,' ').replace(/[^\x20-\x7e\u00a1-\u00ff\n]/g,ch=>W1252.includes(ch)?ch:'?');
@@ -641,7 +651,7 @@ function makePdf(o){const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',fo
  const wrap=(s,w)=>doc.splitTextToSize(pdfSafe(s),w);
  const ls=(o.ls||[]).map(l=>{const x=BYNO[l.n];const ue=l.ue!=null?l.ue:(x&&x.e!=null?cents(x.e):Math.round(l.u/1.05));const a=ue*l.q,v=vatC(a);return {...l,ue,a,v,t:a+v}});
  const TA=ls.reduce((s,l)=>s+l.a,0),TV=ls.reduce((s,l)=>s+l.v,0),TG=ls.reduce((s,l)=>s+l.t,0),TQ=ls.reduce((s,l)=>s+l.q,0);
- const Q=o.kind==='quote',BL=!!o.blank,TITLE=Q?'QUOTATION':'SALES ORDER',FT=Q?'Quotation':'Sales Order';
+ const Q=o.kind==='quote',BL=!!o.blank,RQL=BL?[]:(o.rq||[]),ONLY=!ls.length&&RQL.length>0,TITLE=ONLY?'PRICE REQUEST':Q?'QUOTATION':'SALES ORDER',FT=ONLY?(Q?'Price Request (Quotation)':'Price Request'):Q?'Quotation':'Sales Order';
  doc.setProperties({title:FT+' '+o.no,subject:FT+' '+o.no,creator:'Price List app'});
  function header(first){fill(NAVY);doc.rect(0,0,PW,first?26:15,'F');fill(RED);doc.rect(0,first?26:15,PW,1.1,'F');tc('#ffffff');
   if(!first){font(11,1);T(TITLE,M,9.8);font(9,0);T((o.no||'')+'  (continued)',PW-M,9.8,{align:'right'});return 24}
@@ -649,7 +659,7 @@ function makePdf(o){const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',fo
   // info box
   const bw=78,bx=PW-M-bw,by=33,rh=7,lwid=30;const rows=Q?[['Quotation No.',o.no||''],['Date',o.when||''],['Valid Until',o.until||'']]:[['Order No.',o.no],['Order Date',o.when||'']];
   lw(0.25);dc(GRID);rows.forEach((r,i)=>{const yy=by+i*rh;fill(LBL);doc.rect(bx,yy,lwid,rh,'FD');doc.rect(bx+lwid,yy,bw-lwid,rh,'S');tc(MUT);font(8,1);T(r[0],bx+2.5,yy+4.7);tc(INK);font(9.5,1);T(r[1],bx+bw-2.5,yy+4.8,{align:'right'})});
-  tc(INK);font(10,1);T(Q?'Quotation':'Order Summary',M,38);tc(MUT);font(8.5,0);T('Unit prices and amounts are shown excluding VAT;',M,43.5);T('VAT 5% is shown separately per line and in the totals.',M,47.5);if(Q){tc(INK);font(8.5,1);T(BL?'Valid for ____ days from the quotation date.':`Valid for ${o.valid} days from the quotation date.`,M,52.5)}
+  tc(INK);font(10,1);T(ONLY?(Q?'Quotation - Price Request':'Price Request'):Q?'Quotation':'Order Summary',M,38);tc(MUT);font(8.5,0);if(ONLY){T('The items below are requested for pricing.',M,43.5);T('Prices and stock will be confirmed by the office.',M,47.5)}else{T('Unit prices and amounts are shown excluding VAT;',M,43.5);T('VAT 5% is shown separately per line and in the totals.',M,47.5)}if(Q){tc(INK);font(8.5,1);T(BL?'Valid for ____ days from the quotation date.':`Valid for ${o.valid} days from the quotation date.`,M,52.5)}
   return by+rows.length*rh+7}
  let y=header(true);
  // details tables
@@ -668,7 +678,7 @@ function makePdf(o){const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',fo
  const vlines=(y0,h)=>{xs.slice(1).forEach(x=>doc.line(x,y0,x,y0+h))};
  const thead=()=>{const h=10;lw(0.25);dc(GRID);fill('#e4e7ec');doc.rect(M,y,CW,h,'FD');vlines(y,h);tc(INK);font(7.4,1);
   cols.forEach((cl,i)=>{const k=cl.k;const y0=k.length>1?y+4.2:y+6.2;k.forEach((s,j)=>{if(j)font(6.6,0);T(s,cx(i,cl.a),y0+j*3.3,{align:cl.a||'left'});font(7.4,1)})});y+=h};
- thead();
+ if(ls.length||!RQL.length)thead();
  ls.forEach((l,ix)=>{font(8,0);const dl=wrap(l.d,cols[2].w-3.6),pl=wrap(l.p,cols[3].w-3.6);font(8,1);const nl=wrap(l.n,cols[1].w-3.6);
   const n=Math.max(dl.length,pl.length,nl.length),h=n*3.7+3.4;
   if(y+h>BOT){doc.addPage();y=header(false);thead()}
@@ -679,6 +689,16 @@ function makePdf(o){const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',fo
   tc(INK);font(8.3,0);T(money(l.ue),cx(4,'right'),by,{align:'right'});font(8.3,1);T(String(l.q),cx(5,'right'),by,{align:'right'});font(8.3,0);T(money(l.a),cx(6,'right'),by,{align:'right'});T(money(l.v),cx(7,'right'),by,{align:'right'});font(8.3,1);T(money(l.t),cx(8,'right'),by,{align:'right'});
   y+=h});
  if(BL){for(let k=0;k<(o.blankRows||14);k++){const h=7.5;if(k%2){fill('#f8f9fb');doc.rect(M,y,CW,h,'F')}lw(0.2);dc(GRID);doc.rect(M,y,CW,h,'S');vlines(y,h);tc(MUT);font(8,0);T(String(k+1),cx(0,'center'),y+5,{align:'center'});y+=h}}
+ if(RQL.length){const rc=[{k:'#',w:7,a:'center'},{k:'Item no.',w:28},{k:'Brand',w:22},{k:'Description / Application',w:87},{k:'Qty',w:12,a:'right'},{k:'Price',w:26,a:'right'}];const rx=[];{let x=M;rc.forEach(c=>{rx.push(x);x+=c.w})}
+  const rcx=i=>rc[i].a==='right'?rx[i]+rc[i].w-1.8:rc[i].a==='center'?rx[i]+rc[i].w/2:rx[i]+1.8,rvl=(y0,h)=>rx.slice(1).forEach(x=>doc.line(x,y0,x,y0+h));
+  const rhead=()=>{lw(0.25);dc(GRID);fill('#fff1e6');doc.rect(M,y,CW,7,'FD');tc('#c25400');font(8.5,1);T('PRICE REQUEST',M+2.5,y+4.8);font(7.4,0);T('Price on request - not included in totals',PW-M-2.5,y+4.8,{align:'right'});y+=7;
+   fill('#e4e7ec');doc.rect(M,y,CW,7,'FD');rvl(y,7);tc(INK);font(7.4,1);rc.forEach((c,i)=>T(c.k,rcx(i),y+4.7,{align:c.a||'left'}));y+=7};
+  if(ls.length)y+=5;if(y+22>BOT){doc.addPage();y=header(false)}rhead();
+  RQL.forEach((l,ix)=>{font(8,0);const dl=wrap(l.d||'',rc[3].w-3.6);font(8,1);const nl=wrap(l.n,rc[1].w-3.6),bl=wrap(l.b||'',rc[2].w-3.6);const n=Math.max(dl.length,nl.length,bl.length),h=n*3.7+3.4;
+   if(y+h>BOT){doc.addPage();y=header(false);rhead()}
+   if(ix%2){fill('#fffaf5');doc.rect(M,y,CW,h,'F')}lw(0.2);dc(GRID);doc.rect(M,y,CW,h,'S');rvl(y,h);const by=y+4.6;
+   tc(MUT);font(8,0);T(String(ix+1),rcx(0),by,{align:'center'});tc(INK);font(8,1);nl.forEach((s,i)=>T(s,rcx(1),by+i*3.7));tc('#0054a6');bl.forEach((s,i)=>T(s,rcx(2),by+i*3.7));
+   tc(INK);font(8,0);dl.forEach((s,i)=>T(s,rcx(3),by+i*3.7));font(8.3,1);T(String(l.q),rcx(4),by,{align:'right'});tc('#c25400');font(7.8,1);T('On request',rcx(5),by,{align:'right'});y+=h})}
  // totals
  const SIG=34,gw=92,gx=PW-M-gw,rh=7.5,lw2=56,tw2=CW-gw-6;
  let TL=[];if(Q){const terms=String(o.terms||'').split(/\n+/).map(t=>t.trim()).filter(Boolean);font(7.6,0);terms.forEach((t,i)=>wrap(`${i+1}. `+t.replace(/^\d+[.)]\s*/,''),tw2-5).forEach((w,j)=>TL.push(j?'   '+w:w)))}
@@ -687,8 +707,9 @@ function makePdf(o){const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'mm',fo
  y+=6;
  const trow=(lab,val,i,strong)=>{const yy=y+i*rh;lw(0.25);dc(GRID);if(strong){fill(NAVY);doc.rect(gx,yy,gw,rh+1,'FD');tc('#ffffff');font(9.5,1);T(lab,gx+3,yy+5.4);font(11,1);T(BL?'AED':'AED '+money(val),gx+gw-3,yy+5.6,{align:'right'})}
   else{fill(LBL);doc.rect(gx,yy,lw2,rh,'FD');doc.rect(gx+lw2,yy,gw-lw2,rh,'S');tc('#3d4450');font(8.6,1);T(lab,gx+3,yy+5);tc(INK);font(9.2,0);T(BL?'AED':'AED '+money(val),gx+gw-3,yy+5,{align:'right'})}};
- trow(Q?'Subtotal (excl. VAT)':'Total Amount (excl. VAT)',TA,0);trow('VAT 5%',TV,1);trow('Grand Total (incl. VAT)',TG,2,1);
- if(!BL){tc(MUT);font(8.5,0);if(Q)T(`${ls.length} product${ls.length===1?'':'s'}  |  ${TQ} total qty`,gx+gw,y+3*rh+5.5,{align:'right'});else T(`${ls.length} product${ls.length===1?'':'s'}  |  ${TQ} total qty`,M,y+5)}
+ if(ONLY){lw(0.25);dc(GRID);fill('#fff1e6');doc.rect(gx,y,gw,3*rh+1,'FD');tc('#c25400');font(10,1);T('PRICE REQUEST',gx+gw/2,y+8,{align:'center'});tc('#3d4450');font(8.4,0);T('Prices will be confirmed by the office.',gx+gw/2,y+14,{align:'center'});T(`${RQL.length} item${RQL.length===1?'':'s'} | ${RQL.reduce((a,l)=>a+(+l.q||0),0)} total qty`,gx+gw/2,y+19.5,{align:'center'})}
+ else{trow(Q?'Subtotal (excl. VAT)':'Total Amount (excl. VAT)',TA,0);trow('VAT 5%',TV,1);trow('Grand Total (incl. VAT)',TG,2,1)}
+ if(!BL&&!ONLY){tc(MUT);font(8.5,0);if(Q)T(`${ls.length} product${ls.length===1?'':'s'}  |  ${TQ} total qty`+(RQL.length?`  |  +${RQL.length} price request`:''),gx+gw,y+3*rh+5.5,{align:'right'});else T(`${ls.length} product${ls.length===1?'':'s'}  |  ${TQ} total qty`+(RQL.length?`  |  +${RQL.length} price request (not in totals)`:''),M,y+5)}
  if(TL.length){lw(0.25);dc(GRID);fill('#e4e7ec');doc.rect(M,y,tw2,7,'FD');tc(INK);font(8.2,1);T('TERMS & CONDITIONS',M+2.5,y+4.8);doc.rect(M,y+7,tw2,TL.length*3.4+3,'S');
   tc('#3d4450');font(7.6,0);TL.forEach((w,i)=>T(w,M+2.5,y+11+i*3.4))}
  y+=Math.max(3*rh+1+(Q?8:8),TH)+6;
@@ -732,15 +753,15 @@ $('s_save').onclick=()=>{const name=$('s_name').value.trim();let raw=$('s_num').
  SM={name,num:d};LS.set('pl_salesman',SM);showWho();prefill();closeOv('setupOv')};
 $('orderOpen').onclick=()=>{prefill();drawOrder();showSent();openOv('orderOv')};$('histOpen').onclick=()=>{drawHist();openOv('histOv')};$('askOpen').onclick=()=>openOv('askOv');
 document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o&&!(o.id==='setupOv'&&!SM))closeOv(o.id)}));
-$('o_clear').onclick=()=>{if(confirm('Start a new order? This clears the items and customer details.')){CART={};LS.set('pl_cart',CART);FIELDS.forEach(f=>$(f).value='');LS.set('pl_draft',{});prefill();CUR=null;LS.set('pl_cur',null);CURQ=null;LS.set('pl_curq',null);showQno();render();bar();drawOrder();showSent()}};
+$('o_clear').onclick=()=>{if(confirm('Start a new order? This clears the items and customer details.')){CART={};LS.set('pl_cart',CART);RQ={};LS.set('pl_rq',RQ);FIELDS.forEach(f=>$(f).value='');LS.set('pl_draft',{});prefill();CUR=null;LS.set('pl_cur',null);CURQ=null;LS.set('pl_curq',null);showQno();render();bar();drawOrder();showSent()}};
 let CUR=LS.get('pl_cur',null);
 const nowStr=()=>new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'});
 function showSent(){$('o_sent').textContent=CUR?`${CUR.no} saved in Order history`+(CUR.office?' · ✓ sent to office':'')+(CUR.cust?' · ✓ sent to customer':'')+(CUR.pdf?' · ✓ PDF created':''):'';
  $('o_no').textContent='Order no. '+(CUR?CUR.no:nextNo(true))}
 function commit(){const t=totals();if(!CUR){CUR={no:nextNo(false),when:nowStr(),office:false,cust:false}}
- const entry={no:CUR.no,when:CUR.when,customer:$('o_name').value.trim(),code:$('o_code').value.trim(),area:$('o_area').value.trim(),emirate:$('o_emirate').value,phone:normNum($('o_phone').value),items:t.n,total:fmt(t.t),msg:orderMsg(CUR.no,CUR.when),cmsg:custMsg(CUR.no,CUR.when),d:orderData(CUR.no,CUR.when)};
+ const entry={no:CUR.no,when:CUR.when,customer:$('o_name').value.trim(),code:$('o_code').value.trim(),area:$('o_area').value.trim(),emirate:$('o_emirate').value,phone:normNum($('o_phone').value),items:t.n+rqLines().length,total:t.n?fmt(t.t):'Price request',msg:orderMsg(CUR.no,CUR.when),cmsg:custMsg(CUR.no,CUR.when),d:orderData(CUR.no,CUR.when)};
  const H=LS.get('pl_history',[]);const i=H.findIndex(h=>h.no===CUR.no);if(i>=0)H[i]=entry;else H.unshift(entry);LS.set('pl_history',H.slice(0,200));LS.set('pl_cur',CUR);return entry}
-function ready(){if(!totals().n){alert('The order is empty.');return false}return need(['o_name','o_phone','o_emirate'])}
+function ready(){if(!totals().n&&!rqLines().length){alert('The order is empty.');return false}return need(['o_name','o_phone','o_emirate'])}
 $('o_send').onclick=()=>{if(!ready())return;const e=commit();window.open(waLink(e.msg),'_blank');CUR.office=true;LS.set('pl_cur',CUR);showSent();toast(`${e.no} sent to office`)};
 $('o_cust').onclick=()=>{if(!ready())return;const num=normNum($('o_phone').value);
  if(!validNum(num)){$('o_phone').focus();$('o_phone').style.borderColor='#e21e26';alert('Please enter a valid customer WhatsApp number in Customer phone (for example 050 123 4567 or 971501234567).');return}
@@ -773,15 +794,16 @@ function showQno(){$('o_qno').textContent=CURQ?CURQ.no:nextQNo(true)+' (new)'}
 const addDays=(iso,n)=>{const d=new Date(iso+'T00:00');d.setDate(d.getDate()+(+n));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function quoteData(no,qd){qd=qd||todayISO();const o=orderData(no,'');const valid=+$('o_valid').value||7;
  o.kind='quote';o.valid=valid;o.c.qdate=qd;o.until=niceDate(addDays(qd,valid));o.c.until=o.until;o.when=niceDate(qd);o.terms=$('o_terms').value.trim();return o}
-function quoteMsg(o){const c=o.c;let m=`*QUOTATION ${o.no}*\nDate: ${o.when}\nValid until: ${o.until} (${o.valid} days)\n\n`;
+function quoteMsg(o){const c=o.c;const rq=o.rq||[];const only=!o.ls.length&&rq.length;let m=`*${only?'PRICE REQUEST':'QUOTATION'} ${o.no}*\nDate: ${o.when}\nValid until: ${o.until} (${o.valid} days)\n\n`;
  if(c.name)m+=`Customer: ${c.name}${c.code?' ('+c.code+')':''}\n`;if(c.area||c.emirate)m+=`Area: ${[c.area,c.emirate].filter(Boolean).join(', ')}\n`;
  if(c.se)m+=`Sales Executive: ${c.se}${c.sephone?' ('+c.sephone+')':''}\n`;
- m+=`\n*Items* (unit price excl. VAT)\n`;o.ls.forEach((l,i)=>{m+=`${i+1}) ${l.n} - ${l.d}\n    ${l.q} x ${fmt(l.ue)} = ${fmt(l.a)} + VAT ${fmt(l.v)} = ${fmt(l.t)}\n`});
- m+=`\nSubtotal (excl. VAT): ${fmt(o.a)}\nVAT 5%: ${fmt(o.v)}\n*Grand Total (incl. VAT): ${fmt(o.t)}*\n`;if(o.terms)m+=`\nTerms:\n${o.terms}\n`;return m}
+ if(o.ls.length){m+=`\n*Items* (unit price excl. VAT)\n`;o.ls.forEach((l,i)=>{m+=`${i+1}) ${l.n} - ${l.d}\n    ${l.q} x ${fmt(l.ue)} = ${fmt(l.a)} + VAT ${fmt(l.v)} = ${fmt(l.t)}\n`});
+  m+=`\nSubtotal (excl. VAT): ${fmt(o.a)}\nVAT 5%: ${fmt(o.v)}\n*Grand Total (incl. VAT): ${fmt(o.t)}*\n`}
+ m+=rqMsg(rq);if(only)m+=`\nPrices will be confirmed shortly.\n`;if(o.terms)m+=`\nTerms:\n${o.terms}\n`;return m}
 function commitQ(){if(!CURQ){CURQ={no:nextQNo(false),qd:todayISO()};LS.set('pl_curq',CURQ)}const o=quoteData(CURQ.no,CURQ.qd);const msg=quoteMsg(o);
- const entry={kind:'quote',no:o.no,when:o.when,customer:o.c.name,code:o.c.code,area:o.c.area,emirate:o.c.emirate,phone:normNum(o.c.phone),items:o.ls.length,total:fmt(o.t),msg,cmsg:msg,d:o};
+ const entry={kind:'quote',no:o.no,when:o.when,customer:o.c.name,code:o.c.code,area:o.c.area,emirate:o.c.emirate,phone:normNum(o.c.phone),items:o.ls.length+(o.rq||[]).length,total:o.ls.length?fmt(o.t):'Price request',msg,cmsg:msg,d:o};
  const H=LS.get('pl_history',[]);const i=H.findIndex(h=>h.no===o.no);if(i>=0)H[i]=entry;else H.unshift(entry);LS.set('pl_history',H.slice(0,200));showQno();return entry}
-function readyQ(){if(!totals().n){alert('The quotation is empty. Add items first.');return false}return need(['o_name'])}
+function readyQ(){if(!totals().n&&!rqLines().length){alert('The quotation is empty. Add items first.');return false}return need(['o_name'])}
 $('o_quote').onclick=()=>{if(!readyQ())return;const e=commitQ();const how=sharePdf(makePdf(e.d),e.no+'.pdf');if(how!=='download')toast(`${e.no}.pdf ready`)};
 $('o_qwa').onclick=()=>{if(!readyQ())return;const e=commitQ();const num=normNum($('o_phone').value);window.open(waLink(e.cmsg,validNum(num)?num:''),'_blank');toast('Quotation opened in WhatsApp')};
 {const _oo=$('orderOpen').onclick;$('orderOpen').onclick=()=>{_oo();showQno()}}
@@ -809,7 +831,7 @@ function gcard(g){const qn=norm(PF.q);const lk=g.L?BYNO[g.L]:null;
  `<div>${g.p?`<span class="tg p">📍 ${esc(g.p)}</span>`:''}${g.o?`<span class="tg o">Origin: ${esc(g.o)}</span>`:''}<span class="tg x">${esc(g.s)}</span></div>`+
  (g.oe.length?`<div class="kv"><b>OE no.</b>${oe}</div>`:'')+(g.i.length?`<div class="kv"><b>Other no.</b>${g.i.map(esc).join(', ')}</div>`:'')+
  (g.x.length?`<div class="kv"><b>Cross ref</b>${esc(g.x.slice(0,20).join(', '))}${g.x.length>20?` … +${g.x.length-20} more`:''}</div>`:'')+(g.m?`<div class="kv">ℹ️ ${esc(g.m)}</div>`:'')+
- (lk?priceBox(lk):`<div class="pr"><span style="font-size:13px;color:#8a929b;font-weight:700">Not in price list</span><button class="askbtn" data-gask="${g.j}">💬 Ask price / stock</button></div>`)+`</div>`}
+ (lk?priceBox(lk):`<div class="pr"><span style="font-size:13px;color:#8a929b;font-weight:700">Not in price list</span><button class="askbtn" data-gask="${g.j}">💬 Ask price / stock</button><div class="act" data-rqa="${esc(gkey(g))}" style="margin:0;flex-basis:100%">${rqAct(gkey(g))}</div></div>`)+`</div>`}
 function pfTypes(){const cnt={};GD.forEach(g=>cnt[g.t]=(cnt[g.t]||0)+1);const ts=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,16).map(a=>a[0]);
  $('pf_types').innerHTML=`<button class="chip g${PF.t?'':' on'}" style="--c:#1f2a44" data-pft="">All parts</button>`+ts.map(t=>`<button class="chip g${PF.t===t?' on':''}" style="--c:#0054a6" data-pft="${esc(t)}">${esc(t)}</button>`).join('')}
 function pfRender(){const has=PF.q.trim()||PF.t;const r=pfSearch(PF.q,PF.t);const pm=PF.q.trim()?priceMatches(PF.q):[];
@@ -823,6 +845,14 @@ $('pf_clr').onclick=()=>{PF.q='';$('pf_q').value='';pfRender()};
 $('pf_more').onclick=()=>{PF.lim+=40;pfRender()};
 $('pf_types').onclick=e=>{const c=e.target.closest('[data-pft]');if(!c)return;PF.t=c.dataset.pft;PF.lim=40;pfTypes();pfRender()};
 document.addEventListener('click',e=>{const t=e.target.closest('[data-gask]');if(!t)return;const g=GD[+t.dataset.gask];$('q_prod').value=`${g.n} (${g.b||''} ${g.t})${g.v?' - '+g.v:''}`;$('q_text').value='Please confirm the price and stock for this part.';openOv('askOv')});
+
+// ===== price-request cart lines (guide items not in price list) =====
+const gkey=g=>'g:'+(g.b||'')+':'+g.n;const GK={};GD.forEach(g=>{GK[gkey(g)]=g});
+function rqInfo(g){const d0=g.d&&!norm(g.d).startsWith(norm(g.t))?g.d:g.t;const ap=g.a||g.v;let d=d0+(ap?' - '+ap:'');if(d.length>160)d=d.slice(0,157)+'...';return {n:g.n,b:g.b||'',t:g.t,d}}
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;const d=t.dataset;
+ if(d.radd){const g=GK[d.radd];if(g){setRq(d.radd,1,rqInfo(g));toast(`${g.n} added as price request`)}}
+ else if(d.rinc)setRq(d.rinc,(RQ[d.rinc]?RQ[d.rinc].q:0)+1);else if(d.rdec)setRq(d.rdec,(RQ[d.rdec]?RQ[d.rdec].q:0)-1);else if(d.rrm)setRq(d.rrm,0)});
+document.addEventListener('change',e=>{const k=e.target.dataset&&e.target.dataset.rqty;if(k)setRq(k,e.target.value)});
 
 let st={q:'',b:'',c:'',g:''};
 const WANT=['5W-30','5W-40','10W-40','15W-40','20W-50','ATF','DOT 4'];
