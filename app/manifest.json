@@ -1,7 +1,7 @@
 {
  "name": "Price List",
  "short_name": "Price List",
- "description": "Lubricants & car care price list - AED incl. 5% VAT",
+ "description": "Lubricants, car care & parts price list - AED incl. 5% VAT, parts finder and quotations",
  "start_url": "./index.html",
  "scope": "./",
  "display": "standalone",
