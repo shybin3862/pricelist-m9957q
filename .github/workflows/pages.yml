@@ -19,6 +19,20 @@ jobs:
           touch site/.nojekyll
           printf 'User-agent: *\nDisallow: /\n' > site/robots.txt
           sha256sum site/*.png
+      - name: Include Easy Finder Product
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: shybin3862/easy-finder-product
+          ref: gh-pages
+          path: efp
+      - name: Copy Easy Finder Product into site
+        continue-on-error: true
+        run: |
+          if [ -d efp ]; then
+            mkdir -p site/easy-finder-product
+            rsync -a --exclude .git efp/ site/easy-finder-product/
+          fi
       - name: Push to gh-pages branch
         run: |
           cd site
