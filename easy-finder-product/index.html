@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#C8102E" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#3a0a10" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Easy Finder">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="application-name" content="Easy Finder Product">
+<title>Easy Finder Product</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+<link rel="icon" href="icon-192.png">
+<script>
+(function(){
+  try{
+    var t=localStorage.getItem('efp-theme')||localStorage.getItem('cef-theme')||localStorage.getItem('af2Theme');
+    var dark=t==='d'||(t!=='l'&&window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if(dark) document.documentElement.classList.add('dark');
+  }catch(e){}
+})();
+</script>
+<style>
+:root{
+  --navy:#8B1020;--cu:#C8102E;--gold:#ffffff;--teal:#C8102E;--vio:#C8102E;
+  --bg:#fff7f8;--card:#ffffff;--tx:#1a1214;--mu:#6b5558;--bd:#f0d5d8;--hl:#ffe8ea;
+  --hdr1:#8B1020;--hdr2:#C8102E;--hdr3:#E31C3D;
+  --shadow:0 10px 28px rgba(200,16,46,.14),0 2px 6px rgba(200,16,46,.08);
+  --shadow-sm:0 4px 14px rgba(200,16,46,.10);
+  --inset:inset 0 1px 0 rgba(255,255,255,.8);
+  --btn-sh:0 6px 16px rgba(200,16,46,.35),inset 0 1px 0 rgba(255,255,255,.35);
+  --theme-light:#C8102E;--theme-dark:#3a0a10;
+}
+html.dark,html.dark body,body.dark{
+  --navy:#5a0a12;--cu:#ff4d5a;--gold:#ffffff;--teal:#ff4d5a;--vio:#ff4d5a;
+  --bg:#1a0a0c;--card:#2a1216;--tx:#fff5f5;--mu:#c4a8ac;--bd:#5a2a30;--hl:#3a181c;
+  --hdr1:#5a0a12;--hdr2:#8B1020;--hdr3:#C8102E;
+  --shadow:0 12px 32px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.05);
+  --shadow-sm:0 4px 16px rgba(0,0,0,.35);
+  --inset:inset 0 1px 0 rgba(255,255,255,.08);
+  --btn-sh:0 6px 18px rgba(200,16,46,.35),inset 0 1px 0 rgba(255,255,255,.16);
+  color-scheme:dark;
+}
+html{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;font:14px system-ui,Segoe UI,Arial,sans-serif;background:
+  radial-gradient(1200px 500px at 0% -10%,rgba(200,16,46,.10),transparent 50%),
+  radial-gradient(900px 400px at 100% 0%,rgba(227,28,61,.08),transparent 45%),
+  var(--bg);color:var(--tx);height:100vh;display:flex;flex-direction:column}
+header{background:linear-gradient(125deg,var(--hdr1) 0%,var(--hdr2) 48%,var(--hdr3) 100%);
+  color:#fff;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;
+  box-shadow:0 8px 24px rgba(200,16,46,.30);position:relative;z-index:4}
+header:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;
+  background:linear-gradient(90deg,#ffffff,#C8102E,#ffffff)}
+header .logo{width:40px;height:40px;flex-shrink:0;border-radius:50%;object-fit:contain;
+  box-shadow:0 4px 12px rgba(0,0,0,.28),0 0 0 2px rgba(255,255,255,.35)}
+@media(min-width:800px){header .logo{width:44px;height:44px}}
+header h1{margin:0;font-size:20px;font-weight:800;letter-spacing:.01em;text-shadow:0 2px 8px rgba(0,0,0,.25)}
+header h1 span{color:#fff}
+header .sub{opacity:.9;font-size:12px}
+.theme-toggle{margin-left:auto;width:40px;height:40px;padding:0;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);
+  border:1px solid rgba(255,255,255,.35);color:#fff;box-shadow:var(--inset),0 4px 10px rgba(0,0,0,.2);
+  cursor:pointer}
+.theme-toggle:hover{background:rgba(255,255,255,.24)}
+.theme-toggle svg{width:20px;height:20px;fill:currentColor}
+.theme-toggle .sun{display:none}
+html.dark .theme-toggle .sun,body.dark .theme-toggle .sun{display:block}
+html.dark .theme-toggle .moon,body.dark .theme-toggle .moon{display:none}
+button{background:linear-gradient(180deg,#e31c3d 0%,#C8102E 55%,#9a0c22 100%);color:#fff;border:0;
+  border-radius:10px;padding:8px 14px;cursor:pointer;font-weight:700;
+  box-shadow:var(--btn-sh)}
+button:active{transform:translateY(1px)}
+button.ghost{background:var(--card);border:1px solid var(--bd);color:var(--tx);
+  box-shadow:var(--shadow-sm),var(--inset)}
+.wrap{display:grid;grid-template-columns:250px 1fr;gap:14px;padding:14px;flex:1;min-height:0}
+.side,.main{background:var(--card);border:1px solid var(--bd);border-radius:16px;
+  display:flex;flex-direction:column;min-height:0;box-shadow:var(--shadow),var(--inset)}
+.side h3{margin:12px 12px 6px;font-size:12px;color:var(--cu);text-transform:uppercase;letter-spacing:.04em;font-weight:800}
+input,select{width:100%;padding:8px 10px;border:1px solid var(--bd);border-radius:10px;
+  background:var(--bg);color:var(--tx);font:inherit;box-shadow:inset 0 1px 3px rgba(200,16,46,.06)}
+input:focus,select:focus{outline:0;border-color:var(--cu);box-shadow:0 0 0 3px rgba(200,16,46,.22)}
+#mlist,#vlist{overflow:auto;flex:1;padding:0 6px 8px}
+.v{padding:7px 10px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+.v:hover{background:var(--hl)}.v.on{background:linear-gradient(135deg,#8B1020,#C8102E);color:#fff;box-shadow:0 4px 12px rgba(200,16,46,.35)}
+.v small{color:var(--mu);flex-shrink:0}.v.on small{color:#ffe0e4}
+.top{padding:12px;border-bottom:1px solid var(--bd)}
+#vt{font-size:18px;font-weight:800;margin-bottom:8px}#vt b{color:var(--cu)}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.filters select{width:auto;min-width:140px;background:var(--card)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chip{border:1px solid var(--bd);border-radius:16px;padding:5px 12px;cursor:pointer;font-size:12px;
+  background:var(--card);color:var(--tx);font-weight:600;box-shadow:var(--shadow-sm)}
+.chip.on{background:linear-gradient(180deg,#e31c3d,#C8102E);color:#fff;border-color:transparent;box-shadow:var(--btn-sh)}
+.bar{display:flex;align-items:center;gap:8px;margin-top:8px;color:var(--mu)}
+.bar .sp{flex:1}
+.tbl{overflow:auto;flex:1}
+table{border-collapse:collapse;width:100%}
+th{position:sticky;top:0;background:linear-gradient(135deg,var(--hdr1),var(--hdr2));color:#fff;text-align:left;padding:8px 7px;font-size:12px;z-index:1;box-shadow:0 2px 8px rgba(0,0,0,.12)}
+td{padding:7px 7px;border-bottom:1px solid var(--bd);font-size:13px;vertical-align:top}
+tr:hover td{background:var(--hl);cursor:pointer}
+.tag{display:inline-block;background:linear-gradient(180deg,var(--bd),transparent);border:1px solid var(--bd);
+  border-radius:6px;padding:1px 6px;margin:1px;font-size:11px;box-shadow:var(--inset)}
+#det{position:fixed;right:0;top:0;bottom:0;width:380px;background:var(--card);border-left:3px solid var(--cu);
+  padding:18px;transform:translateX(100%);transition:.2s;overflow:auto;box-shadow:-12px 0 40px rgba(200,16,46,.22);z-index:6}
+#det.open{transform:none}
+#det h2{color:var(--cu);margin-top:0;word-break:break-all}
+#det .k{color:var(--mu);font-size:12px;margin-top:10px}
+footer{text-align:center;font-size:12px;color:var(--mu);padding:8px 12px;flex-shrink:0}
+
+#home-front{padding:12px 12px 0}
+.home-sec{margin:0 0 16px;padding:0 0 14px;border-bottom:1px solid var(--bd)}
+.home-sec h2{margin:0 0 4px;font-size:16px;color:var(--cu);font-weight:800}
+.home-lead{margin:0 0 10px;color:var(--mu);font-size:12px}
+.home-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.home-row input{flex:1;min-width:180px}
+.home-msg{margin:8px 0 0;font-size:13px;color:var(--mu);min-height:1.2em}
+.home-grid-var{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:0 0 8px}
+.home-grid-var label{display:flex;flex-direction:column;gap:4px;font-size:11px;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.03em}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.feat-card{display:flex;gap:10px;align-items:flex-start;padding:8px;border:1px solid var(--bd);border-radius:12px;
+  background:var(--card);color:inherit;text-decoration:none;box-shadow:var(--shadow-sm);min-height:96px}
+.feat-card:hover{border-color:var(--cu)}
+.feat-card img,.feat-ph{width:72px;height:72px;object-fit:cover;border-radius:8px;background:var(--hl);border:1px solid var(--bd);flex-shrink:0}
+.feat-body{min-width:0}
+.feat-body b{font-size:13px}
+.feat-desc{font-size:12px;margin:2px 0;color:var(--tx)}
+.feat-brand{font-size:11px;color:var(--mu)}
+.feat-card .price{margin-top:4px}
+.feat-card .badge{margin-top:4px}
+#cat-status{margin:0;padding:10px 12px;font-size:13px;color:var(--mu)}
+.add-photo{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.stk{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:1px 6px}
+.stk.ok{background:#e5f6ec;color:#146c36}
+.stk.out{background:#fde8e8;color:#8a1f1f}
+.stk.ask{background:var(--hl);color:var(--mu)}
+html.dark .stk.ok,body.dark .stk.ok{background:#14331e;color:#8ee0a8}
+html.dark .stk.out,body.dark .stk.out{background:#3a1515;color:#f0a0a0}
+.diag-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 8px}
+.diag-stage{background:var(--bg);border:1px solid var(--bd);border-radius:12px;padding:8px;overflow:auto;color:var(--tx)}
+.diag-stage svg{display:block;width:100%;max-width:720px;margin:0 auto;height:auto}
+.hot{cursor:pointer}
+.hot:hover .hot-hit{stroke:var(--cu);stroke-width:3}
+.hot-num{fill:#C8102E;stroke:#fff;stroke-width:1.2}
+.hot-n{fill:#fff;font:700 11px system-ui,Segoe UI,Arial,sans-serif;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.hot-lab{fill:var(--tx);font:600 11px system-ui,Segoe UI,Arial,sans-serif;pointer-events:none}
+.diag-leg{font-size:12px;color:var(--mu);margin:6px 0 0}
+#diag-pop{margin-top:10px;border:1px solid var(--bd);border-radius:12px;padding:10px 12px;background:var(--card);box-shadow:var(--shadow-sm)}
+#diag-pop h3{margin:0 0 6px;color:var(--cu);font-size:14px}
+.diag-item{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--bd);cursor:pointer}
+.diag-item:first-of-type{border-top:0}
+.diag-item img{width:48px;height:48px;object-fit:cover;border-radius:6px;background:var(--hl)}
+.diag-item b{font-size:13px}
+#diag-btn.on{background:linear-gradient(180deg,#e31c3d,#C8102E);color:#fff;border-color:transparent}
+
+.adv-checks{display:flex;flex-wrap:wrap;gap:10px 16px;margin:8px 0}
+.adv-checks label{font-size:13px;font-weight:600;color:var(--tx);text-transform:none;letter-spacing:0;flex-direction:row;align-items:center;gap:6px;display:flex}
+.adv-actions{justify-content:space-between;margin-top:8px}
+#adv-count{margin:0;font-weight:700;color:var(--cu);min-height:auto}
+.myph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:10px}
+.myph-card{border:1px solid var(--bd);border-radius:12px;padding:8px;background:var(--card);cursor:pointer;text-align:left;color:inherit}
+.myph-card img{width:100%;height:110px;object-fit:cover;border-radius:8px;background:var(--hl);display:block}
+.myph-card b{display:block;margin-top:6px;font-size:13px}
+.myph-card .myph-desc{font-size:11px;color:var(--mu);margin:2px 0 6px}
+.myph-card .myph-del{font-size:11px}
+#myph-btn[hidden],#myphotos-sec[hidden]{display:none !important}
+
+@media(max-width:800px){.wrap{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <img class="logo" src="logo.png" width="40" height="40" alt="">
+  <div>
+    <h1>Easy Finder <span>Product</span></h1>
+    <div class="sub">SHYBIN — vehicle-first parts lookup with prices · make → model → year / engine</div>
+  </div>
+  <button type="button" class="theme-toggle" id="th" aria-label="Switch to dark mode" title="Toggle dark mode">
+    <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 14.5A8.5 8.5 0 0 1 9.5 3 7 7 0 1 0 21 14.5z"/></svg>
+    <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5a1 1 0 0 1 1-1h0a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0zm0 14a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zm7.5-6.5a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1zM4.5 12a1 1 0 0 1-1 1h-1a1 1 0 1 1 0-2h1a1 1 0 0 1 1 1zm13.07-5.57a1 1 0 0 1 1.41 0l.71.7a1 1 0 1 1-1.41 1.42l-.71-.71a1 1 0 0 1 0-1.41zM4.93 17.66a1 1 0 0 1 1.41 0l.71.71a1 1 0 0 1-1.41 1.41l-.71-.7a1 1 0 0 1 0-1.42zm12.73 2.12a1 1 0 0 1 0-1.41l.71-.71a1 1 0 0 1 1.41 1.41l-.7.71a1 1 0 0 1-1.42 0zM5.64 5.64a1 1 0 0 1 1.41 0l.71.71A1 1 0 0 1 6.35 7.76l-.71-.71a1 1 0 0 1 0-1.41zM12 8a4 4 0 1 1 0 8 4 4 0 0 1 0-8z"/></svg>
+  </button>
+</header>
+<div class="wrap">
+  <div class="side">
+    <h3>1. Pick make</h3>
+    <div style="padding:0 12px 8px"><input id="ms" placeholder="Type make e.g. Toyota"></div>
+    <div id="mlist"></div>
+    <h3>2. Pick model</h3>
+    <div style="padding:0 12px 8px"><input id="vs" placeholder="Type model e.g. Camry"></div>
+    <div id="vlist"></div>
+  </div>
+  <div class="main">
+<div id="home-front"><section class="home-sec" id="featured-sec"><h2>Featured parts</h2><p class="home-lead">A few items from the catalogue, shown straight away while the full list loads.</p><div class="feat-grid"><a class="feat-card" data-sku="20793L" href="#part=20793L"><img src="images/20793L_fdcc57524d071f13.webp" alt="Photo" width="160" height="160" loading="eager"><div class="feat-body"><b>20793L</b><div class="feat-desc">ENGINE OIL SPECIAL TEC AA 5W-20 4/5L</div><div class="feat-brand">MOLY</div><div class="price"><span class="cur">AED</span> <b>667.80</b> <small>incl. 5% VAT</small> <span class="pk">· 4 × 5 L</span></div><span class="badge">Photo</span></div></a><a class="feat-card" data-sku="2451L" href="#part=2451L"><img src="images/2451L_c1b185efb82e97a5.webp" alt="Photo" width="160" height="160" loading="eager"><div class="feat-body"><b>2451L</b><div class="feat-desc">ENGINE OIL SYNTH ENERGY 0W-40 4/4L</div><div class="feat-brand">MOLY</div><div class="price"><span class="cur">AED</span> <b>681.66</b> <small>incl. 5% VAT</small> <span class="pk">· 4 × 4 L</span></div><span class="badge">Photo</span></div></a><a class="feat-card" data-sku="21590L" href="#part=21590L"><img src="images/21590L_bf18406bb6d73625.webp" alt="Photo" width="160" height="160" loading="eager"><div class="feat-body"><b>21590L</b><div class="feat-desc">ENGINE OIL TOURING HIGH TECH SPECIAL 20W-50 12/1L</div><div class="feat-brand">MOLY</div><div class="price"><span class="cur">AED</span> <b>419.58</b> <small>incl. 5% VAT</small> <span class="pk">· 12 × 1 L</span></div><span class="badge">Photo</span></div></a><a class="feat-card" data-sku="21161L" href="#part=21161L"><img src="images/21161L_cc09e4b0f307ae37.webp" alt="Photo" width="160" height="160" loading="eager"><div class="feat-body"><b>21161L</b><div class="feat-desc">BRAKE FLUID DOT 5.1 6/500ML</div><div class="feat-brand">MOLY</div><div class="price"><span class="cur">AED</span> <b>172.62</b> <small>incl. 5% VAT</small> <span class="pk">· 6 × 500 mL</span></div><span class="badge">Photo</span></div></a><a class="feat-card" data-sku="21146L" href="#part=21146L"><img src="images/21146L_bc9acf18289eda34.webp" alt="Photo" width="160" height="160" loading="eager"><div class="feat-body"><b>21146L</b><div class="feat-desc">RADIATOR ANTI FREEZE KFS 2001/12 PLUS FLUID RED COLOUR 4/5L</div><div class="feat-brand">MOLY</div><div class="price"><span class="cur">AED</span> <b>469.98</b> <small>incl. 5% VAT</small> <span class="pk">· 4 × 5 L</span></div><span class="badge">Photo</span></div></a><a class="feat-card" data-sku="W 719/30" href="#part=W 719/30"><img src="images/W_719_30_421dc336a2a5028f.webp" alt="Source: MANN-FILTER" width="160" height="160" loading="eager"><div class="feat-body"><b>W 719/30</b><div class="feat-desc">OIL FILTER-GOLF III/VI VW 034115561A CAR MANN</div><div class="feat-brand">MANN</div><div class="price none">Price on request</div><span class="badge">Source: MANN-FILTER</span></div></a><a class="feat-card" data-sku="C 15 143/1" href="#part=C 15 143/1"><img src="images/C_15_143_1_f07e715324e08b3b.webp" alt="Source: MANN-FILTER" width="160" height="160" loading="eager"><div class="feat-body"><b>C 15 143/1</b><div class="feat-desc">AIR FILTER BM 13712247444 CAR MANN</div><div class="feat-brand">MANN</div><div class="price none">Price on request</div><span class="badge">Source: MANN-FILTER</span></div></a><a class="feat-card" data-sku="CU 24 004" href="#part=CU 24 004"><img src="images/CU_24_004_2122215db5a5c319.webp" alt="Source: MANN-FILTER" width="160" height="160" loading="eager"><div class="feat-body"><b>CU 24 004</b><div class="feat-desc">CABIN AIR FILTER HY 97133-2E250 TUCSON MANN</div><div class="feat-brand">MANN</div><div class="price none">Price on request</div><span class="badge">Source: MANN-FILTER</span></div></a><a class="feat-card" data-sku="WK 69" href="#part=WK 69"><img src="images/WK_69_502b1fe49b1e8bd7.webp" alt="Source: MANN-FILTER" width="160" height="160" loading="eager"><div class="feat-body"><b>WK 69</b><div class="feat-desc">FUEL FILTER AU 1K0201051C A1(8X) MANN</div><div class="feat-brand">MANN</div><div class="price none">Price on request</div><span class="badge">Source: MANN-FILTER</span></div></a><a class="feat-card" data-sku="KYB-SM5201" href="#part=KYB-SM5201"><img src="images/KYB-SM5201_6a78bac2051de5ef.webp" alt="Source: rockauto.com" width="160" height="160" loading="eager"><div class="feat-body"><b>KYB-SM5201</b><div class="feat-desc">MOUNTING KIT HY ACCENT FRONT RH/LH 200001- KYB</div><div class="feat-brand">KYB</div><div class="price none">Price on request</div><span class="badge">Source: rockauto.com</span></div></a><a class="feat-card" data-sku="KYB-SM5148" href="#part=KYB-SM5148"><img src="images/KYB-SM5148_269d66e961d122ab.webp" alt="Source: rockauto.com" width="160" height="160" loading="eager"><div class="feat-body"><b>KYB-SM5148</b><div class="feat-desc">MOUNTING KIT HY ACCENT REAR RH/LH 199501-200001 KYB</div><div class="feat-brand">KYB</div><div class="price none">Price on request</div><span class="badge">Source: rockauto.com</span></div></a><a class="feat-card" data-sku="A1N005" href="#part=A1N005"><img src="images/approx/brake-pad-jpg.webp" alt="Approximate – typical brake pad" width="160" height="160" loading="eager"><div class="feat-body"><b>A1N005</b><div class="feat-desc">BRAKE PAD FRONT LE 04465-60190/SN101P LX470 199801-200707 ADVICS</div><div class="feat-brand">ADVICS</div><div class="price none">Price on request</div><span class="badge approx">Approximate – typical brake pad</span></div></a></div></section>
+<section class="home-sec" id="vin-sec">
+  <h2>VIN number search</h2>
+  <p class="home-lead">Enter a 17-character VIN to look up the make and year, then see matching parts. Confirm fitment before sale.</p>
+  <div class="home-row">
+    <input id="vin_q" maxlength="17" autocomplete="off" spellcheck="false" placeholder="e.g. JTDKN3DU0A0123456" aria-label="VIN number">
+    <button type="button" id="vin_go">Find parts</button>
+  </div>
+  <p class="home-msg" id="vin_msg" role="status"></p>
+</section>
+<section class="home-sec" id="variant-sec">
+  <h2>Variant search</h2>
+  <p class="home-lead">Search by make, model, year and engine. This is separate from the VIN search above. The lists on the left stay available too.</p>
+  <div class="home-grid-var">
+    <label>Make<select id="var_make"><option value="">All makes</option></select></label>
+    <label>Model<select id="var_model"><option value="">All models</option></select></label>
+    <label>Year<select id="var_year"><option value="">All years</option></select></label>
+    <label>Engine<select id="var_eng"><option value="">All engines</option></select></label>
+  </div>
+  <div class="home-row">
+    <input id="var_q" placeholder="Item no. / OEM / keyword" aria-label="Keyword">
+    <button type="button" id="var_go">Search variants</button>
+  </div>
+</section>
+<section class="home-sec" id="adv-sec">
+  <h2>Advanced search</h2>
+  <p class="home-lead">Combine filters to narrow the catalogue. This is separate from the VIN search and the basic variant search above. Works offline. Filters with no data in the catalogue are hidden.</p>
+  <div class="home-grid-var" id="adv-grid">
+    <label id="adv-make-wrap">Make<select id="adv_make"><option value="">All makes</option></select></label>
+    <label id="adv-model-wrap">Model<select id="adv_model"><option value="">All models</option></select></label>
+    <label id="adv-y0-wrap">Year from<select id="adv_y0"><option value="">Any</option></select></label>
+    <label id="adv-y1-wrap">Year to<select id="adv_y1"><option value="">Any</option></select></label>
+    <label id="adv-eng-wrap">Engine size / code<select id="adv_eng"><option value="">All engines</option></select></label>
+    <label id="adv-fuel-wrap" hidden>Fuel<select id="adv_fuel"><option value="">All fuels</option></select></label>
+    <label id="adv-tag-wrap" hidden>Variant tags<select id="adv_tag"><option value="">All tags</option></select></label>
+    <label id="adv-cat-wrap">Category<select id="adv_cat"><option value="">All categories</option></select></label>
+    <label id="adv-brand-wrap">Brand<select id="adv_brand"><option value="">All brands</option></select></label>
+    <label id="adv-pmin-wrap">Price from (AED)<input id="adv_pmin" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Min"></label>
+    <label id="adv-pmax-wrap">Price to (AED)<input id="adv_pmax" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Max"></label>
+    <label id="adv-pn-wrap">Part number / cross-ref<input id="adv_pn" placeholder="Item no. or cross-ref" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div class="adv-checks" id="adv-checks">
+    <label id="adv-exact-wrap"><input type="checkbox" id="adv_exact"> Has exact photo</label>
+    <label id="adv-priced-wrap"><input type="checkbox" id="adv_priced"> Has price</label>
+  </div>
+  <div class="home-row adv-actions">
+    <span id="adv-count" class="home-msg" role="status"></span>
+    <button type="button" class="ghost" id="adv_clear">Clear filters</button>
+  </div>
+</section>
+<section class="home-sec" id="myphotos-sec" hidden>
+  <h2>My photos</h2>
+  <p class="home-lead">Photos you uploaded on this device. Search by part number; tap a photo to open that part.</p>
+  <div class="home-row">
+    <input id="myph_q" placeholder="Search by part number" aria-label="Search my photos" autocomplete="off">
+    <button type="button" class="ghost" id="myph_close">Close</button>
+  </div>
+  <div id="myph-grid" class="myph-grid"></div>
+  <p id="myph-empty" class="home-lead" hidden>No uploaded photos yet.</p>
+</section>
+<section class="home-sec" id="diagram-sec">
+  <h2>Parts diagrams</h2>
+  <p class="home-lead">Schematic diagrams of common systems. Tap a numbered part to see matching items, prices and availability. These are simple reference drawings, not manufacturer exploded views.</p>
+  <div class="diag-tabs" id="diag-tabs"></div>
+  <div class="diag-stage" id="diag-stage"></div>
+  <div id="diag-pop" hidden></div>
+</section></div>
+<p id="cat-status">Loading the full catalogue…</p>
+    <div class="top">
+      <div id="vt"></div>
+      <input id="q" placeholder="Search item no. / OEM / keyword (press / )" style="width:100%">
+      <div class="filters">
+        <select id="year"><option value="">All years</option></select>
+        <select id="eng"><option value="">All engines</option></select>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="bar"><span id="cnt"></span><span class="sp"></span><button class="ghost" id="more">Show more</button><button id="csv">Export CSV</button></div>
+    </div>
+    <div class="tbl">
+      <table>
+        <thead><tr><th>Item No.</th><th>Description</th><th>Brand</th><th>Application</th><th>Year</th><th>Engine</th><th>Category</th><th>UoM</th></tr></thead>
+        <tbody id="tb"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<footer>Confirm fitment before sale. Make, model, year and engine are parsed from item descriptions and are not verified fitment. Stock quantities are not shown. Prices in AED incl. 5% VAT (price list); parts without a price show Price on request. Data from Product Catalogue (27,759 items).</footer>
+<div id="det"></div>
+
+<script>
+var RAW,CATS,BRANDS,UOMS,MAKES,MODELS,ENGS,ROWS;
+var makeCount,modelCount,MAKE_LIST;
+var make='',model=null,year='',eng='',cat='',shown=80,res=[];
+var STEP=80;
+function showBrand(b){if(!b)return '';if(/^new\\s*east$/i.test(b)||String(b).toUpperCase()==='NEWEAST')return '\u2014';return b;}
+const N=s=>String(s).toUpperCase().replace(/[-\s.\/]/g,'');
+
+function matchQ(r,qraw){
+  const q=qraw.trim(); if(!q) return true;
+  const U=q.toUpperCase();
+  const nq=N(U);
+  const toks=U.split(/\s+/).filter(Boolean);
+  const terms=(toks.filter(t=>t.length>1).length?toks.filter(t=>t.length>1):toks);
+  if(!terms.every(t=>r.u.includes(t)||r.k.includes(N(t)))) return false;
+  const partish=/[0-9]/.test(U) && /[A-Z0-9][\-\/ ][A-Z0-9]/.test(U);
+  if(!partish) return true;
+  const flex=U.replace(/[\-\s.\/]+/g,'[\\-\\s.\\/]*');
+  const bounded=new RegExp('(^|[^A-Z0-9])'+flex+'([^A-Z0-9]|$)');
+  if(bounded.test(r.u)) return true;
+  if(N(r._sku)===nq) return true;
+  if(nq.length>=6 && r.k.includes(nq)) return true;
+  return false;
+}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function yrLab(a,b){return b?a+'\u2013'+b:a+'\u2013';}
+function yearHit(ranges, year){
+  if(!year) return true;
+  const y=+year;
+  if(!ranges||!ranges.length) return false;
+  return ranges.some(([a,b])=>b? (a<=y && y<=b) : (a<=y));
+}
+function efpHydrate(data){
+RAW=data; window.RAW=RAW;
+CATS=RAW.cats; BRANDS=RAW.brands; UOMS=RAW.uoms; MAKES=RAW.makes; MODELS=RAW.models; ENGS=RAW.engines; ROWS=RAW.rows;
+ROWS.forEach(r=>{
+  r._sku=r[0]; r._desc=r[1]; r._brand=showBrand(BRANDS[r[2]]); r._cat=CATS[r[3]]||''; r._uom=UOMS[r[4]]||'';
+  r._apps=(r[5]||[]).map(([mk,md])=>({mk, md, make:MAKES[mk], model: md>=0?MODELS[md]:''}));
+  r._years=r[6]||[];
+  r._eng=(r[7]||[]).map(i=>ENGS[i]).filter(Boolean);
+  r.u=(r._sku+' '+r._desc+' '+r._brand+' '+r._cat+' '+r._apps.map(a=>a.make+' '+a.model).join(' ')+' '+r._eng.join(' ')).toUpperCase();
+  r.k=N(r._sku+' '+r._desc);
+});
+makeCount={}; modelCount={};
+ROWS.forEach(r=>{
+  const seenM=new Set(), seenV=new Set();
+  r._apps.forEach(a=>{
+    if(!seenM.has(a.make)){makeCount[a.make]=(makeCount[a.make]||0)+1; seenM.add(a.make);}
+    const key=a.make+'|'+a.model;
+    if(!seenV.has(key)){modelCount[key]=(modelCount[key]||0)+1; seenV.add(key);}
+  });
+});
+MAKE_LIST=Object.keys(makeCount).sort((a,b)=>makeCount[b]-makeCount[a]||a.localeCompare(b));
+
+mlist(); vlist(); run();
+}
+
+function mlist(){
+  const f=$('ms').value.toUpperCase().trim();
+  let h=`<div class="v ${make?'':'on'}" data-m=""><span>All makes</span><small>${ROWS.length}</small></div>`;
+  MAKE_LIST.filter(m=>!f||m.toUpperCase().includes(f)).forEach(m=>{
+    h+=`<div class="v ${m===make?'on':''}" data-m="${esc(m)}"><span>${esc(m)}</span><small>${makeCount[m]}</small></div>`;
+  });
+  $('mlist').innerHTML=h;
+}
+function vlist(){
+  const f=$('vs').value.toUpperCase().trim();
+  let items=[];
+  if(make){
+    Object.keys(modelCount).forEach(k=>{
+      if(k.startsWith(make+'|')){
+        const md=k.slice(make.length+1);
+        items.push({model:md, n:modelCount[k]});
+      }
+    });
+  } else {
+    const agg={};
+    Object.keys(modelCount).forEach(k=>{
+      const md=k.split('|').slice(1).join('|');
+      if(!md) return;
+      agg[md]=(agg[md]||0)+modelCount[k];
+    });
+    items=Object.keys(agg).map(md=>({model:md,n:agg[md]}));
+  }
+  items.sort((a,b)=>{
+    if(!a.model && b.model) return 1;
+    if(a.model && !b.model) return -1;
+    return b.n-a.n||a.model.localeCompare(b.model);
+  });
+  const allOn=model===null;
+  let h=`<div class="v ${allOn?'on':''}" data-v="*"><span>All models</span></div>`;
+  items.filter(it=>!f||(it.model||'UNSPECIFIED').toUpperCase().includes(f)).forEach(it=>{
+    const lab=it.model||'Unspecified (make only)';
+    const val=it.model===''?'__NONE__':it.model;
+    const on=model!==null && ((it.model===''&&model==='')||it.model===model);
+    h+=`<div class="v ${on?'on':''}" data-v="${esc(val)}"><span>${esc(lab)}</span><small>${it.n}</small></div>`;
+  });
+  $('vlist').innerHTML=h;
+}
+function fillYearEng(base){
+  const ys=new Set(), es=new Set();
+  base.forEach(r=>{
+    (r._years||[]).forEach(([a,b])=>{for(let y=a;y<=(b||a);y++) ys.add(y);});
+    r._eng.forEach(e=>es.add(e));
+  });
+  const ykeep=year, ekeep=eng;
+  $('year').innerHTML='<option value="">All years</option>'+[...ys].sort((a,b)=>a-b).map(y=>`<option ${y==ykeep?'selected':''} value="${y}">${y}</option>`).join('');
+  $('eng').innerHTML='<option value="">All engines</option>'+[...es].sort().map(e=>`<option ${e===ekeep?'selected':''} value="${esc(e)}">${esc(e)}</option>`).join('');
+  year=$('year').value; eng=$('eng').value;
+}
+function appOk(r){
+  if(!make && model===null) return true;
+  return r._apps.some(a=>{
+    if(make && a.make!==make) return false;
+    if(model===null) return true;
+    if(model==='') return !a.model;
+    return a.model===model;
+  });
+}
+function run(){
+  const pool=[];
+  for(const r of ROWS){
+    if(!appOk(r)) continue;
+    if($('q').value.trim() && !matchQ(r,$('q').value)) continue;
+    pool.push(r);
+  }
+  fillYearEng(pool);
+  const base=pool.filter(r=>(!year||yearHit(r._years,year))&&(!eng||r._eng.includes(eng)));
+  const cc={}; base.forEach(r=>cc[r._cat]=(cc[r._cat]||0)+1);
+  $('chips').innerHTML=`<button type="button" class="chip ${cat?'':'on'}" data-c="">All ${base.length}</button>`+
+    Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).map(c=>`<button type="button" class="chip ${c===cat?'on':''}" data-c="${esc(c)}">${esc(c)} ${cc[c]}</button>`).join('');
+  res=cat?base.filter(r=>r._cat===cat):base;
+  const bits=[make, model===null?'':(model||'Unspecified')].filter(Boolean);
+  $('vt').innerHTML=bits.length? `Parts for <b>${esc(bits.join(' \u00b7 '))}</b>` : 'All vehicles — pick a make on the left';
+  shown=STEP; draw();
+}
+function appText(r){
+  const parts=r._apps.map(a=>a.model? a.make+' '+a.model : a.make);
+  return [...new Set(parts)];
+}
+function draw(){
+  const slice=res.slice(0,shown);
+  $('cnt').textContent=res.length.toLocaleString()+' matches';
+  $('tb').innerHTML=slice.map((r,i)=>`<tr data-i="${i}">
+    <td><b>${esc(r._sku)}</b></td>
+    <td>${esc(r._desc)}</td>
+    <td>${esc(r._brand)}</td>
+    <td>${appText(r).map(x=>'<span class="tag">'+esc(x)+'</span>').join(' ')}</td>
+    <td>${(r._years||[]).map(([a,b])=>esc(yrLab(a,b))).join(', ')}</td>
+    <td>${r._eng.map(e=>'<span class="tag">'+esc(e)+'</span>').join(' ')}</td>
+    <td>${esc(r._cat)}</td>
+    <td>${esc(r._uom)}</td>
+  </tr>`).join('') || '<tr><td colspan="8" style="color:var(--mu);padding:20px">No matches.</td></tr>';
+  $('more').style.display=shown<res.length?'':'none';
+}
+$('mlist').onclick=e=>{const d=e.target.closest('.v'); if(!d)return; make=d.dataset.m||''; model=null; cat=''; year=''; eng=''; mlist(); vlist(); run();};
+$('vlist').onclick=e=>{const d=e.target.closest('.v'); if(!d)return; const v=d.dataset.v; model=(v==='*'||v==null)?null:(v==='__NONE__'?'':v); cat=''; year=''; eng=''; vlist(); run();};
+$('ms').oninput=mlist; $('vs').oninput=vlist;
+$('q').oninput=()=>{clearTimeout(window._aft); window._aft=setTimeout(()=>{cat='';run();},120);};
+$('year').onchange=()=>{year=$('year').value; cat=''; run();};
+$('eng').onchange=()=>{eng=$('eng').value; cat=''; run();};
+$('chips').onclick=e=>{const c=e.target.closest('.chip'); if(!c)return; cat=c.dataset.c||''; shown=STEP; run();};
+$('more').onclick=()=>{shown+=STEP; draw();};
+$('tb').onclick=e=>{
+  const t=e.target.closest('tr[data-i]'); if(!t)return;
+  const r=res[+t.dataset.i]; if(!r)return;
+  $('det').innerHTML=`<button class="ghost" onclick="document.getElementById('det').classList.remove('open')" style="float:right">\u2715</button>
+    <h2>${esc(r._sku)}</h2>
+    <div class="k">Description</div>${esc(r._desc)}
+    <div class="k">Brand</div>${esc(r._brand)}
+    <div class="k">Category</div>${esc(r._cat)}
+    <div class="k">UoM</div>${esc(r._uom)||'\u2014'}
+    <div class="k">Application (from description)</div>${appText(r).join('<br>')||'\u2014'}
+    <div class="k">Year in description</div>${(r._years||[]).map(([a,b])=>yrLab(a,b)).join(', ')||'\u2014'}
+    <div class="k">Engine in description</div>${r._eng.join(', ')||'\u2014'}
+    <p class="k">Confirm fitment before sale. These tags are parsed from the item description and are not verified fitment. Stock quantities are not shown.</p>`;
+  $('det').classList.add('open');
+};
+$('csv').onclick=()=>{
+  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+  const L=[['Item No.','Description','Brand','Category','UoM','Application (from description)','Year','Engine'].join(',')].concat(
+    res.map(r=>[r._sku,r._desc,r._brand,r._cat,r._uom,appText(r).join(' | '),(r._years||[]).map(([a,b])=>yrLab(a,b)).join(' | '),r._eng.join(' | ')].map(q).join(','))
+  );
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['\ufeff'+L.join('\r\n')],{type:'text/csv'}));
+  a.download='easy-finder-product-'+(make||'all').replace(/\W+/g,'_')+'.csv'; a.click();
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='SELECT'){e.preventDefault();$('q').focus();}
+  if(e.key==='Escape'){$('q').value='';$('det').classList.remove('open'); make=''; model=null; year=''; eng=''; cat=''; mlist(); vlist(); run();}
+});
+
+function applyTheme(dark, persist){
+  document.documentElement.classList.toggle('dark', dark);
+  document.body.classList.toggle('dark', dark);
+  var c=dark?'#3a0a10':'#C8102E';
+  document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute('content',c);m.removeAttribute('media');});
+  var btn=$('th');
+  if(btn) btn.setAttribute('aria-label', dark?'Switch to light mode':'Switch to dark mode');
+  if(persist){ try{ localStorage.setItem('efp-theme', dark?'d':'l'); }catch(e){} }
+}
+(function(){
+  var t=null;
+  try{ t=localStorage.getItem('efp-theme')||localStorage.getItem('cef-theme')||localStorage.getItem('af2Theme'); }catch(e){}
+  var q=window.matchMedia('(prefers-color-scheme: dark)');
+  applyTheme(t==='d'||(t!=='l'&&q.matches), false);
+  q.addEventListener('change', function(e){
+    var cur=null; try{ cur=localStorage.getItem('efp-theme'); }catch(x){}
+    if(cur!=='d'&&cur!=='l') applyTheme(e.matches, false);
+  });
+  $('th').onclick=function(){ applyTheme(!document.documentElement.classList.contains('dark'), true); };
+})();
+</script>
+<script src="extras.js"></script>
+
+<script>
+(function(){
+  /* Featured cards work on first paint; opening details waits for the catalogue. */
+  function goSku(sku){
+    if(!sku) return;
+    window._efpOpenSku=sku;
+    if(typeof window.efpOpenPart==='function'){ window.efpOpenPart(sku); return; }
+    var st=document.getElementById('cat-status');
+    if(st) st.textContent='Loading the catalogue so this part can be opened…';
+  }
+  document.addEventListener('click',function(e){
+    var c=e.target.closest && e.target.closest('#featured-sec [data-sku], #diag-pop [data-sku]');
+    if(!c) return;
+    e.preventDefault();
+    goSku(c.getAttribute('data-sku'));
+  });
+  async function efpBoot(){
+    var st=document.getElementById('cat-status');
+    try{
+      var res=await fetch('pf-data.json');
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      var data=await res.json();
+      if(typeof efpHydrate!=='function') throw new Error('hydrate missing');
+      efpHydrate(data);
+      if(st) st.hidden=true;
+      document.dispatchEvent(new Event('efp-data-ready'));
+      if(window._efpOpenSku && typeof window.efpOpenPart==='function') window.efpOpenPart(window._efpOpenSku);
+    }catch(err){
+      if(st){ st.hidden=false; st.textContent='Could not load the full catalogue. You can still browse featured parts. '+err; }
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', efpBoot);
+  else efpBoot();
+})();
+</script>
+
+<script>if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}</script>
+
+</body>
+</html>
