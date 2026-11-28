@@ -1604,6 +1604,247 @@ imgq-note, .imgq-note{font-size:13px;color:var(--cu);font-weight:700;margin:0 0 
     updateOwnerBtn();
   }
 
+  /* efp-v16-landing */
+  window.efpRunImageSearch = runImageSearch;
+  window.efpOpenMyPhotos = openMyPhotos;
+  window.efpRunVin = function(raw){
+    window.efpCloseSheets && window.efpCloseSheets();
+    const v=cleanVin(raw||'');
+    if($('vin_q')) $('vin_q').value = (raw||'').trim().toUpperCase();
+    window.efpShowApp && window.efpShowApp('vin-sec');
+    const d=decodeVin(raw);
+    const msg=$('vin_msg') || $('scan-msg');
+    if(!d.ok){ if(msg) msg.textContent=d.msg; if($('scan-msg') && $('vin_msg')!==$('scan-msg')) $('scan-msg').textContent=d.msg; return; }
+    make=d.make||''; model=null; year=d.year?String(d.year):''; eng=''; cat='';
+    if($('q')) $('q').value='';
+    if($('dock-q')) $('dock-q').value='';
+    if($('year')) $('year').value=year;
+    if($('eng')) $('eng').value='';
+    mlist(); vlist(); run();
+    syncVariantFromState();
+    let line;
+    if(d.make && d.year) line=`VIN ${d.vin}: ${d.make}, ${d.year}. Showing matching parts. Confirm fitment before sale.`;
+    else if(d.make) line=`VIN ${d.vin}: ${d.make}. Year not decoded. Showing that make. Confirm fitment before sale.`;
+    else if(d.year) line=`VIN ${d.vin}: ${d.year}. Make not decoded. Confirm fitment before sale.`;
+    else line=`VIN ${d.vin} read. Confirm fitment before sale.`;
+    if($('vin_msg')) $('vin_msg').textContent=line;
+    if(typeof window.efpHistAdd==='function') window.efpHistAdd({q:d.vin, kind:'vin'});
+    const tbl=document.querySelector('.tbl'); if(tbl) tbl.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+
+  const OIL_SKIP=/cooler|battery|cv joint|hose|filter|pump/i;
+  function isGuideLube(r){
+    if((r._cat||'')!=='Lubricants & Fluids') return false;
+    if(OIL_SKIP.test(r._sub||'')) return false;
+    if(/OIL COOLER|HOSE\.?\s*COOLER FOR ENGINE OIL/i.test(r._desc||'')) return false;
+    return true;
+  }
+  function oilFuelOk(r, fuel){
+    if(!fuel) return true;
+    const tags=fuelOf(r._desc||'')||[];
+    if(!tags.length) return true; /* unspecified — keep, listed as general */
+    if(fuel==='Petrol') return tags.indexOf('Petrol')>=0 || tags.indexOf('Hybrid')>=0;
+    return tags.indexOf(fuel)>=0;
+  }
+  function oilAppOk(r, st){
+    if(!st.make) return true;
+    if(!(r._apps&&r._apps.length)) return false;
+    return r._apps.some(a=>{
+      if(a.make!==st.make) return false;
+      if(!st.model) return true;
+      return a.model===st.model;
+    });
+  }
+  let oilSt={step:1, make:'', model:'', year:'', eng:'', fuel:''};
+
+  function oilPath(){
+    const el=$('oil-path'); if(!el) return;
+    const bits=[oilSt.make, oilSt.model, oilSt.year, oilSt.eng, oilSt.fuel].filter(Boolean);
+    el.textContent=bits.join(' · ');
+  }
+  function oilEsc(s){ return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+  function oilFilter(list, q){
+    const f=(q||'').trim().toUpperCase();
+    if(!f) return list;
+    return list.filter(x=>String(x.label||x).toUpperCase().includes(f));
+  }
+  function oilModels(){
+    const items=[];
+    Object.keys(modelCount||{}).forEach(k=>{
+      if(oilSt.make && k.startsWith(oilSt.make+'|')) items.push(k.slice(oilSt.make.length+1));
+    });
+    items.sort((a,b)=>a.localeCompare(b));
+    return items;
+  }
+  function oilPoolForVehicle(){
+    return ROWS.filter(r=>{
+      if(!isGuideLube(r)) return false;
+      if(!oilAppOk(r, oilSt)) return false;
+      if(oilSt.year && !yearHit(r._years, oilSt.year)) return false;
+      if(oilSt.eng && !(r._eng||[]).includes(oilSt.eng)) return false;
+      return true;
+    });
+  }
+  function oilYears(){
+    const set=new Set();
+    ROWS.forEach(r=>{
+      if(!isGuideLube(r) && !(r._apps&&r._apps.length)) return;
+      if(oilSt.make && !(r._apps||[]).some(a=>a.make===oilSt.make && (!oilSt.model || a.model===oilSt.model))) return;
+      (r._years||[]).forEach(([a,b])=>{
+        const x=a||0, y=b||a||0;
+        for(let yr=x; yr<=y && yr-x<80; yr++) if(yr>=1970 && yr<=2035) set.add(String(yr));
+        if(!b && a>=1970 && a<=2035) set.add(String(a));
+      });
+    });
+    const arr=[...set].sort((a,b)=>+b-+a);
+    return arr.length?arr:Array.from({length:36},(_,i)=>String(2026-i));
+  }
+  function oilEngines(){
+    const set=new Set();
+    ROWS.forEach(r=>{
+      if(oilSt.make && !(r._apps||[]).some(a=>a.make===oilSt.make && (!oilSt.model || a.model===oilSt.model))) return;
+      if(oilSt.year && r._years && r._years.length && !yearHit(r._years, oilSt.year)) return;
+      (r._eng||[]).forEach(e=>set.add(e));
+    });
+    return [...set].sort((a,b)=>a.localeCompare(b));
+  }
+  function oilThumb(r){
+    const im=(r._imgs&&r._imgs[0]) || (typeof shippedImgs==='function' && shippedImgs(r._sku,r._desc,r._cat)||[])[0];
+    return im&&im.f ? im.f : 'images/approx/motor-oil-bottles-variousbrands-jpg.webp';
+  }
+  function renderOilResults(){
+    const body=$('oil-body'); if(!body) return;
+    if($('oil-title')) $('oil-title').textContent='Matching lubricants';
+    const vehicle=oilPoolForVehicle().filter(r=>oilFuelOk(r, oilSt.fuel));
+    const general=ROWS.filter(r=>{
+      if(!isGuideLube(r)) return false;
+      if(oilAppOk(r, oilSt) && (r._apps&&r._apps.length)) return false;
+      if(!(r._apps&&r._apps.length) && oilFuelOk(r, oilSt.fuel)) return true;
+      return false;
+    });
+    const sortFn=(a,b)=>{
+      const pa=(a._price&&a._price[0]!=null)?0:1, pb=(b._price&&b._price[0]!=null)?0:1;
+      if(pa!==pb) return pa-pb;
+      const ea=a._sub==='engine oil'?0:1, eb=b._sub==='engine oil'?0:1;
+      if(ea!==eb) return ea-eb;
+      return (a._sku||'').localeCompare(b._sku||'');
+    };
+    vehicle.sort(sortFn); general.sort(sortFn);
+    function cards(list){
+      if(!list.length) return '<p class="sheet-lead">None in the catalogue for this step.</p>';
+      return list.map(r=>{
+        const pr=priceHtml(r);
+        const av=availHtml(r);
+        return `<a class="oil-card" href="#part=${encodeURIComponent(r._sku)}" data-oil-sku="${oilEsc(r._sku)}">
+          <img src="${oilEsc(oilThumb(r))}" alt="" width="56" height="56" loading="lazy">
+          <div><b>${oilEsc(r._sku)}</b>
+            <div class="oil-desc">${oilEsc(r._desc)}</div>
+            <div class="feat-brand">${oilEsc(r._brand||'')} · ${oilEsc(r._sub||r._cat||'')}</div>
+            ${pr}${av}
+          </div></a>`;
+      }).join('');
+    }
+    let html='';
+    html+=`<p class="sheet-lead">These are catalogue items, not a recommendation of the single correct grade. Confirm fitment, specification and stock before sale.</p>`;
+    html+=`<div class="oil-group">Matching this vehicle (${vehicle.length})</div>`+cards(vehicle);
+    html+=`<div class="oil-group">General lubricants — confirm fitment (${general.length})</div>`+cards(general.slice(0,80));
+    if(general.length>80) html+=`<p class="sheet-lead">Showing the first 80 general lubricants. Use search for more.</p>`;
+    body.innerHTML=html;
+    if(typeof window.efpHistAdd==='function'){
+      const q=[oilSt.make,oilSt.model,oilSt.year,oilSt.eng,oilSt.fuel].filter(Boolean).join(' · ');
+      window.efpHistAdd({q:q, kind:'oil', extra:Object.assign({},oilSt)});
+    }
+  }
+  function renderOilStep(){
+    const body=$('oil-body'); if(!body) return;
+    oilPath();
+    if(oilSt.step===6){ renderOilResults(); return; }
+    const titles={1:'Choose make',2:'Choose model',3:'Choose year',4:'Choose engine',5:'Choose fuel'};
+    if($('oil-title')) $('oil-title').textContent=titles[oilSt.step]||'Oil guide';
+    let opts=[], anyLabel='';
+    if(oilSt.step===1){
+      opts=(typeof MAKE_LIST!=='undefined'?MAKE_LIST:Object.keys(makeCount||{})).map(m=>({value:m,label:m,n:makeCount[m]}));
+    }else if(oilSt.step===2){
+      opts=oilModels().map(m=>({value:m,label:m||'Unspecified'}));
+      anyLabel='Any model';
+    }else if(oilSt.step===3){
+      opts=oilYears().map(y=>({value:y,label:y}));
+      anyLabel='Any year';
+    }else if(oilSt.step===4){
+      opts=oilEngines().map(e=>({value:e,label:e}));
+      anyLabel='Any engine';
+    }else if(oilSt.step===5){
+      opts=[{value:'Petrol',label:'Petrol'},{value:'Diesel',label:'Diesel'},{value:'Hybrid',label:'Hybrid'}];
+      anyLabel='Any fuel';
+    }
+    body.innerHTML=`<input class="oil-q" id="oil_q" placeholder="Type to filter" autocomplete="off">
+      ${anyLabel?`<button type="button" class="oil-opt" data-oil-val=""><span>${oilEsc(anyLabel)}</span></button>`:''}
+      <div class="oil-list" id="oil_list"></div>`;
+    const draw=()=>{
+      const q=$('oil_q')?$('oil_q').value:'';
+      const show=oilFilter(opts,q);
+      $('oil_list').innerHTML=show.map(o=>`<button type="button" class="oil-opt" data-oil-val="${oilEsc(o.value)}"><span>${oilEsc(o.label)}</span>${o.n?`<small>${o.n}</small>`:''}</button>`).join('')
+        || '<p class="sheet-lead">No matches.</p>';
+    };
+    draw();
+    if($('oil_q')) $('oil_q').oninput=draw;
+  }
+  function oilPick(val){
+    if(oilSt.step===1){ oilSt.make=val; oilSt.model=''; oilSt.year=''; oilSt.eng=''; oilSt.fuel=''; oilSt.step=2; }
+    else if(oilSt.step===2){ oilSt.model=val; oilSt.year=''; oilSt.eng=''; oilSt.step=3; }
+    else if(oilSt.step===3){ oilSt.year=val; oilSt.eng=''; oilSt.step=4; }
+    else if(oilSt.step===4){ oilSt.eng=val; oilSt.step=5; }
+    else if(oilSt.step===5){ oilSt.fuel=val; oilSt.step=6; }
+    renderOilStep();
+  }
+  window.efpOpenOilGuide=function(restore){
+    if(typeof ROWS==='undefined'||!ROWS||!ROWS.length||!ROWS[0]._sku){
+      window.efpOpenSheet && window.efpOpenSheet('oil-sheet');
+      if($('oil-body')) $('oil-body').innerHTML='<p class="sheet-lead">Loading the catalogue…</p>';
+      window._efpOilOpen=restore||true;
+      return;
+    }
+    if(restore && typeof restore==='object'){
+      oilSt=Object.assign({step:6,make:'',model:'',year:'',eng:'',fuel:''}, restore, {step:6});
+    }else{
+      oilSt={step:1, make:'', model:'', year:'', eng:'', fuel:''};
+    }
+    window.efpOpenSheet && window.efpOpenSheet('oil-sheet');
+    renderOilStep();
+  };
+  function efpInitLanding(){
+    if($('menu-myphotos')){
+      const show=typeof isUnlocked==='function' && isUnlocked();
+      $('menu-myphotos').hidden=!show;
+    }
+    const oilBody=$('oil-body');
+    if(oilBody){
+      oilBody.addEventListener('click', ev=>{
+        const skuBtn=ev.target.closest && ev.target.closest('[data-oil-sku]');
+        if(skuBtn){
+          ev.preventDefault();
+          const sku=skuBtn.getAttribute('data-oil-sku');
+          window.efpCloseSheets && window.efpCloseSheets();
+          window.efpShowApp && window.efpShowApp(null);
+          if(typeof window.efpOpenPart==='function') window.efpOpenPart(sku);
+          return;
+        }
+        const opt=ev.target.closest && ev.target.closest('[data-oil-val]');
+        if(opt) oilPick(opt.getAttribute('data-oil-val')||'');
+      });
+    }
+    if($('oil-back')) $('oil-back').onclick=()=>{
+      if(oilSt.step>1){ oilSt.step-=1; if(oilSt.step<6){ /* stay */ } renderOilStep(); }
+      else { window.efpCloseSheets && window.efpCloseSheets(); }
+    };
+    if(window._efpOilOpen){
+      const r=window._efpOilOpen===true?null:window._efpOilOpen;
+      window._efpOilOpen=null;
+      window.efpOpenOilGuide(r);
+    }
+  }
+  /* /efp-v16-landing */
+
     window.efpOpenPart=function(sku){
     const r=bySku[sku]||ROWS.find(x=>x._sku===sku);
     if(!r){ toast('Part not in the catalogue'); return; }
@@ -1616,6 +1857,7 @@ imgq-note, .imgq-note{font-size:13px;color:var(--cu);font-weight:700;margin:0 0 
     });
     if(row) row.scrollIntoView({block:'center',behavior:'smooth'});
   };
+  efpInitLanding();
   efpInitHome();
   efpInitDiagrams();
   efpInitAdv();
